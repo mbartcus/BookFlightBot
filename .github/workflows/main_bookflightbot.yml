@@ -58,6 +58,6 @@ jobs:
         uses: azure/webapps-deploy@v2
         id: deploy-to-webapp
         with:
-          app-name: 'botflyght'
+          app-name: 'botflytht'
           slot-name: 'Production'
           publish-profile: ${{ secrets.SECRET_BOT }}
