@@ -60,4 +60,4 @@ jobs:
         with:
           app-name: 'botflyght'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.APP_BOT_SECRET }}
+          publish-profile: ${{ secrets.SECRET_BOT }}
