@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
-""" 
+"""
 This sample shows how to create a bot that demonstrates the following:
 - Use [LUIS](https://www.luis.ai) to implement core AI capabilities.
 - Implement a multi-turn conversation using Dialogs.
@@ -97,7 +97,7 @@ def init_func_v2():
     return APP
 
 if __name__ == "__main__":
-	APP = init_func(None)
+    APP = init_func(None)
     try:
         web.run_app(APP, host="0.0.0.0", port=CONFIG.PORT)
     except Exception as error:
