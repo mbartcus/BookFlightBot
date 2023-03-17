@@ -7,26 +7,39 @@ from botbuilder.core import IntentScore, TopIntent, TurnContext
 
 from booking_details import BookingDetails
 
-
+# Define the Intent enum class
 class Intent(Enum):
     BOOK_FLIGHT = "BookFlight"
     CANCEL = "Cancel"
-    GET_WEATHER = "GetWeather"
-    NONE_INTENT = "NoneIntent"
+    NONE_INTENT = "None"
+    
+# Define the key mapping for attributes and their corresponding types
+MAP_KEY_ATTR = {'or_city': 'origin', 'dst_city':'destination', 'str_date': 'start_date', 'end_date': 'end_date', 'budget': 'budget'}
+MAP_KEY_TYPE = {'or_city': 'geographyV2_city', 'dst_city':'geographyV2_city', 'str_date': 'datetime', 'end_date': 'datetime', 'budget': 'number'}
 
 
+
+# Define a function to determine the top intent from a dictionary of intents
 def top_intent(intents: Dict[Intent, dict]) -> TopIntent:
+    # Initialize variables to store the top intent and its score
     max_intent = Intent.NONE_INTENT
     max_value = 0.0
 
+    # Loop through all intents and their scores
     for intent, value in intents:
+        # Create an IntentScore object from the score value
         intent_score = IntentScore(value)
+        
+        # Check if this intent has a higher score than the current top intent
         if intent_score.score > max_value:
+            # If so, update the top intent and its score
             max_intent, max_value = intent, intent_score.score
-
+    # Create a TopIntent object from the top intent and its score, and return it
     return TopIntent(max_intent, max_value)
 
 
+
+# Define a helper class for LUIS functionality
 class LuisHelper:
     @staticmethod
     async def execute_luis_query(
@@ -35,68 +48,61 @@ class LuisHelper:
         """
         Returns an object with preformatted LUIS results for the bot's dialogs to consume.
         """
-        result = None
-        intent = None
-
         try:
             recognizer_result = await luis_recognizer.recognize(turn_context)
-
-            intent = (
-                sorted(
-                    recognizer_result.intents,
-                    key=recognizer_result.intents.get,
-                    reverse=True,
-                )[:1][0]
-                if recognizer_result.intents
-                else None
-            )
+            intent = recognizer_result.get_top_scoring_intent().intent
 
             if intent == Intent.BOOK_FLIGHT.value:
-                result = BookingDetails()
+                booking_details = BookingDetails()
 
-                # We need to get the result from the LUIS JSON which at every level returns an array.
-                to_entities = recognizer_result.entities.get("$instance", {}).get(
-                    "To", []
-                )
-                if len(to_entities) > 0:
-                    if recognizer_result.entities.get("To", [{"$instance": {}}])[0][
-                        "$instance"
-                    ]:
-                        result.destination = to_entities[0]["text"].capitalize()
-                    else:
-                        result.unsupported_airports.append(
-                            to_entities[0]["text"].capitalize()
-                        )
+                for (key, type_) in MAP_KEY_TYPE.items():
+                    entity = LuisHelper._get_entity(recognizer_result, key, type_)
 
-                from_entities = recognizer_result.entities.get("$instance", {}).get(
-                    "From", []
-                )
-                if len(from_entities) > 0:
-                    if recognizer_result.entities.get("From", [{"$instance": {}}])[0][
-                        "$instance"
-                    ]:
-                        result.origin = from_entities[0]["text"].capitalize()
-                    else:
-                        result.unsupported_airports.append(
-                            from_entities[0]["text"].capitalize()
-                        )
-
-                # This value will be a TIMEX. And we are only interested in a Date so grab the first result and drop
-                # the Time part. TIMEX is a format that represents DateTime expressions that include some ambiguity.
-                # e.g. missing a Year.
-                date_entities = recognizer_result.entities.get("datetime", [])
-                if date_entities:
-                    timex = date_entities[0]["timex"]
-
-                    if timex:
-                        datetime = timex[0].split("T")[0]
-
-                        result.travel_date = datetime
-
-                else:
-                    result.travel_date = None
-
+                    if entity is not None:
+                        setattr(booking_details, MAP_KEY_ATTR[key], entity)
+                
+            return Intent.BOOK_FLIGHT.value, booking_details
+                    
         except Exception as exception:
-            print(exception)
+            print(f"Error in execute_luis_query: {exception}")
 
-        return intent, result
+        return Intent.NONE_INTENT.value, None
+
+    # Return the right entity in the Json
+    @staticmethod
+    def _get_entity(recognizer_result, key, type_):
+        if (recognizer_result.entities.get("$instance") is None
+            or recognizer_result.entities.get(key) is None
+            or len(recognizer_result.entities.get(key)) == 0) :
+            return None
+
+        # finds the entity with the highest score in the list of entities for the given key
+        selected_entity = max(recognizer_result.entities.get("$instance").get(key), key=lambda x: x["score"])
+        print(f'key: {key}, type: {type_}, selected_entity: {selected_entity}')
+        
+        # Get a list of entities of the specified type
+        entities = recognizer_result.entities.get("$instance").get(type_)
+        if entities:
+            # Update the index with the minimum score based on the distance between the start and end indices of the entities
+            index, _ = min(
+                enumerate(entities),
+                key=lambda e: abs(e[1]['startIndex'] - selected_entity['startIndex']) + abs(e[1]['endIndex'] - selected_entity['endIndex'])
+            )
+        else:
+            return None
+        
+
+        if (index is None
+            or recognizer_result.entities.get(type_) is None
+            or len(recognizer_result.entities.get(type_)) <= index):
+            return None
+        
+        return (
+            recognizer_result.entities.get(type_)[index].capitalize()
+            if type_ == 'geographyV2_city'
+            else recognizer_result.entities.get(type_)[index]["timex"][0]
+            if type_ == 'datetime'
+            else recognizer_result.entities.get(type_)[index]
+            if type_ == 'number'
+            else None
+        )

@@ -64,7 +64,7 @@ class MainDialog(ComponentDialog):
             return await step_context.next(None)
         message_text = (
             str(step_context.options)
-            if step_context.options
+            if hasattr(step_context, "options") and step_context.options is not None
             else "What can I help you with today?"
         )
         prompt_message = MessageFactory.text(
@@ -86,22 +86,26 @@ class MainDialog(ComponentDialog):
         intent, luis_result = await LuisHelper.execute_luis_query(
             self._luis_recognizer, step_context.context
         )
-
+        
+        print(luis_result)
+        
         if intent == Intent.BOOK_FLIGHT.value and luis_result:
             # Show a warning for Origin and Destination if we can't resolve them.
+            '''
             await MainDialog._show_warning_for_unsupported_cities(
                 step_context.context, luis_result
             )
-
+            '''
             # Run the BookingDialog giving it whatever details we have from the LUIS call.
             return await step_context.begin_dialog(self._booking_dialog_id, luis_result)
 
-        if intent == Intent.GET_WEATHER.value:
-            get_weather_text = "TODO: get weather flow here"
-            get_weather_message = MessageFactory.text(
-                get_weather_text, get_weather_text, InputHints.ignoring_input
-            )
-            await step_context.context.send_activity(get_weather_message)
+        ## We do not need this for this project.
+        #if intent == Intent.GET_WEATHER.value:
+        #    get_weather_text = "TODO: get weather flow here"
+        #    get_weather_message = MessageFactory.text(
+        #        get_weather_text, get_weather_text, InputHints.ignoring_input
+        #    )
+        #    await step_context.context.send_activity(get_weather_message)
 
         else:
             didnt_understand_text = (
@@ -132,6 +136,9 @@ class MainDialog(ComponentDialog):
         prompt_message = "What else can I do for you?"
         return await step_context.replace_dialog(self.id, prompt_message)
 
+
+    '''
+    # We do not need this for this project.
     @staticmethod
     async def _show_warning_for_unsupported_cities(
         context: TurnContext, luis_result: BookingDetails
@@ -150,3 +157,4 @@ class MainDialog(ComponentDialog):
                 message_text, message_text, InputHints.ignoring_input
             )
             await context.send_activity(message)
+    '''

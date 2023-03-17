@@ -17,6 +17,9 @@ from .cancel_and_help_dialog import CancelAndHelpDialog
 
 class DateResolverDialog(CancelAndHelpDialog):
     """Resolve the date"""
+    
+    START_DATE_DIALOG_ID = "str_date"
+    END_DATE_DIALOG_ID = "end_date"
 
     def __init__(
         self,
@@ -26,6 +29,9 @@ class DateResolverDialog(CancelAndHelpDialog):
         super(DateResolverDialog, self).__init__(
             dialog_id or DateResolverDialog.__name__, telemetry_client
         )
+        
+        self.dialog_id = dialog_id
+        
         self.telemetry_client = telemetry_client
 
         date_time_prompt = DateTimePrompt(
@@ -49,7 +55,12 @@ class DateResolverDialog(CancelAndHelpDialog):
         """Prompt for the date."""
         timex = step_context.options
 
-        prompt_msg = "On what date would you like to travel?"
+        if self.dialog_id == DateResolverDialog.START_DATE_DIALOG_ID:
+            prompt_msg = "What date would you like to travel?"
+        elif self.dialog_id == DateResolverDialog.END_DATE_DIALOG_ID:
+            prompt_msg = "What date would you like to return?"
+        else:
+            prompt_msg = "On what date would you like to travel?"
         reprompt_msg = (
             "I'm sorry, for best results, please enter your travel "
             "date including the month, day and year."
@@ -76,7 +87,10 @@ class DateResolverDialog(CancelAndHelpDialog):
 
     async def final_step(self, step_context: WaterfallStepContext):
         """Cleanup - set final return value and end dialog."""
-        timex = step_context.result[0].timex
+        if type(step_context.result) is list:
+            timex = step_context.result[0].timex
+        else:
+            timex = step_context.result.timex
         return await step_context.end_dialog(timex)
 
     @staticmethod
