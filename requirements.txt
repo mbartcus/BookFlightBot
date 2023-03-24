@@ -13,5 +13,6 @@ msrest>=0.6.10
 Flask==1.1.1
 Jinja2==3.1.1
 aiounittest
+pytest
 opencensus-ext-azure
 
