@@ -87,8 +87,6 @@ class MainDialog(ComponentDialog):
             self._luis_recognizer, step_context.context
         )
         
-        print(luis_result)
-        
         if intent == Intent.BOOK_FLIGHT.value and luis_result:
             # Show a warning for Origin and Destination if we can't resolve them.
             '''

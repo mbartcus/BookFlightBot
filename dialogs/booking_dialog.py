@@ -185,10 +185,13 @@ class BookingDialog(CancelAndHelpDialog):
         booking_details.budget = step_context.result
         
         msg = (
-            f"Please confirm, I have you traveling to: { booking_details.destination }"
-            f" from: { booking_details.origin } on: { booking_details.start_date }, "
-            f" returning on: { booking_details.end_date }."
-            f" Your budget is: { booking_details.budget }. Is this correct?"
+            f"Please confirm, your trip details:"
+            f" - To: { booking_details.destination }"
+            f" - from: { booking_details.origin }"
+            f" - departure date: { booking_details.start_date }, "
+            f" - returning date: { booking_details.end_date }."
+            f" - Your budget is: { booking_details.budget }. "
+            "Is this correct?"
         )
 
         # Offer a YES/NO prompt.
