@@ -10,6 +10,12 @@ from botbuilder.core import MessageFactory, BotTelemetryClient, NullTelemetryCli
 from .cancel_and_help_dialog import CancelAndHelpDialog
 from .date_resolver_dialog import DateResolverDialog
 
+from config import DefaultConfig
+import logging
+from opencensus.ext.azure.log_exporter import AzureLogHandler
+
+CONFIG = DefaultConfig()
+INSTRUMENTATION_KEY = CONFIG.APPINSIGHTS_INSTRUMENTATION_KEY
 
 class BookingDialog(CancelAndHelpDialog):
     """Flight booking implementation."""
@@ -26,6 +32,11 @@ class BookingDialog(CancelAndHelpDialog):
         text_prompt = TextPrompt(TextPrompt.__name__)
         #text_prompt.telemetry_client = telemetry_client
 
+        self.logger = logging.getLogger(__name__)
+        self.logger.addHandler(AzureLogHandler(connection_string='InstrumentationKey=' + INSTRUMENTATION_KEY))
+        
+        
+        
         waterfall_dialog = WaterfallDialog(
             WaterfallDialog.__name__,
             [
@@ -201,12 +212,21 @@ class BookingDialog(CancelAndHelpDialog):
 
     async def final_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         """Complete the interaction and end the dialog."""
+        booking_details = step_context.options
+        
         if step_context.result:
-            booking_details = step_context.options
-            booking_details.travel_date = step_context.result
+            #booking_details.travel_date = step_context.result
+            self.logger.setLevel(logging.INFO)
+            self.logger.info('The flight is booked and the customer is satisfied.')
 
             return await step_context.end_dialog(booking_details)
 
+        prop = {'custom_dimensions': booking_details.__dict__}
+        
+        self.logger.setLevel(logging.ERROR)
+        self.logger.error('The customer was not satisfied about the bots proposals', extra=prop)
+        
+        
         return await step_context.end_dialog()
 
     def is_ambiguous(self, timex: str) -> bool:
