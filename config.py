@@ -18,5 +18,5 @@ class DefaultConfig:
     # myluisfly-authoring.cognitiveservices.azure.com
     LUIS_API_HOST_NAME = os.environ.get("LuisAPIHostName", "westeurope.api.cognitive.microsoft.com")
     APPINSIGHTS_INSTRUMENTATION_KEY = os.environ.get(
-        "AppInsightsInstrumentationKey", "03bbdb7a-ebd4-4ca2-bed4-92dbcf64e331"
+        "AppInsightsInstrumentationKey", "55a84b23-a0f4-4bde-a0fc-b713f6e72804"
     )

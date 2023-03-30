@@ -1,0 +1,11 @@
+traces
+| where message contains "not satisfied"
+| project message
+| summarize count() by message
+
+
+
+traces 
+| where severityLevel == 3 
+| project message 
+| summarize count() by message
